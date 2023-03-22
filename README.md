@@ -1,1 +1,1 @@
-# MTI881---MRI-semi-supervised-segmentation
+# MTI881-MRI-semi-supervised-segmentation
