@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore")
 
 
 def make_dataset(root, mode):
-    assert mode in ['train','val', 'test']
+    assert mode in ['train','val', 'test', 'unlabeled']
     items = []
 
     if mode == 'train':
@@ -49,7 +49,7 @@ def make_dataset(root, mode):
         for it_im, it_gt in zip(images, labels):
             item = (os.path.join(val_img_path, it_im), os.path.join(val_mask_path, it_gt))
             items.append(item)
-    else:
+    elif mode == 'test':
         test_img_path = os.path.join(root, 'test', 'Img')
         test_mask_path = os.path.join(root, 'test', 'GT')
 
@@ -62,11 +62,21 @@ def make_dataset(root, mode):
         for it_im, it_gt in zip(images, labels):
             item = (os.path.join(test_img_path, it_im), os.path.join(test_mask_path, it_gt))
             items.append(item)
+    else:
+        unlabeled_img_path = os.path.join(root, 'test','Img-Unlabeled')
+        images = os.lisdir(unlabeled_img_path)
+        images.sort()
+
+        for it_im in images:
+          item = (os.path.join(unlabeled_img_path, it_im), None)
+          items.append(item)
+
 
     return items
 
 
 class MedicalImageDataset(Dataset):
+    """Face Landmarks dataset."""
 
     def __init__(self, mode, root_dir, transform=None, mask_transform=None, augment=False, equalize=False):
         """
@@ -102,16 +112,23 @@ class MedicalImageDataset(Dataset):
     def __getitem__(self, index):
         img_path, mask_path = self.imgs[index]
         img = Image.open(img_path)
-        mask = Image.open(mask_path).convert('L')
 
-        if self.equalize:
-            img = ImageOps.equalize(img)
+        if mask_path is not None:
+            mask = Image.open(mask_path).convert('L')
 
-        if self.augmentation:
-            img, mask = self.augment(img, mask)
+            if self.equalize:
+              img = ImageOps.equalize(img)
 
-        if self.transform:
+            if self.augmentation:
+              img, mask = self.augment(img, mask)
+
+            if self.transform:
+              img = self.transform(img)
+              mask = self.mask_transform(mask)
+
+            return [img, mask, img_path]
+        else:
+          if self.transform:
             img = self.transform(img)
-            mask = self.mask_transform(mask)
 
-        return [img, mask, img_path]
+          return [img, None, img_path]
