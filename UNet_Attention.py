@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
 import torch
-from UNet_Base import _ConvBlock, _EncoderBlock, _DecoderBlock, initialize_weights
+from UNet_Base import initialize_weights
 
 
 class conv_block(nn.Module):
@@ -14,10 +14,10 @@ class conv_block(nn.Module):
     def __init__(self, in_channels, out_channels,dropout=False):
         super(conv_block, self).__init__()
         layers = [
-            nn.Conv2d(in_channels, out_channels, kernel_size=3),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3,stride=1,padding=1),
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3,stride=1,padding=1),
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(inplace=True),
         ]
