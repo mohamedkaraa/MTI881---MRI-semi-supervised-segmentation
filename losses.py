@@ -17,7 +17,7 @@ class DiceLoss(nn.Module):
 
     def _dice_loss(self, score, target):
         target = target.float()
-        smooth = 1e-5
+        smooth = 1
         intersect = torch.sum(score * target)
         y_sum = torch.sum(target * target)
         z_sum = torch.sum(score * score)
@@ -56,7 +56,7 @@ class TverskyLoss(nn.Module):
         output_tensor = torch.cat(tensor_list, dim=1)
         return output_tensor.float()
     
-    def forward(self, inputs, targets,smooth=1e-5):
+    def forward(self, inputs, targets,smooth=1):
         
         targets = self._one_hot_encoder(targets)
 

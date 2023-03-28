@@ -79,27 +79,28 @@ class _DecoderBlock(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes,n1):
+        features = [n1, n1*2, n1*4, n1*8, n1*16]
         super(UNet, self).__init__()
-        self.enc1 = _EncoderBlock(1, 16)
-        self.enc2 = _EncoderBlock(16, 32)
-        self.enc3 = _EncoderBlock(32, 64)
-        self.enc4 = _EncoderBlock(64, 128, dropout=True)
+        self.enc1 = _EncoderBlock(1, features[0])
+        self.enc2 = _EncoderBlock(features[0], features[1])
+        self.enc3 = _EncoderBlock(features[1], features[2])
+        self.enc4 = _EncoderBlock(features[2], features[3], dropout=True)
 
-        self.center = _DecoderBlock(128, 256, 128)
+        self.center = _DecoderBlock(features[3], features[4], features[3])
 
-        self.dec4 = _DecoderBlock(256, 128, 64)
-        self.dec3 = _DecoderBlock(128, 64, 32)
-        self.dec2 = _DecoderBlock(64, 32, 16)
+        self.dec4 = _DecoderBlock(features[4], features[3], features[2])
+        self.dec3 = _DecoderBlock(features[3], features[2], features[1])
+        self.dec2 = _DecoderBlock(features[2], features[1], features[0])
         self.dec1 = nn.Sequential(
-            nn.Conv2d(32, 16, kernel_size=3),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(features[1], features[0], kernel_size=3),
+            nn.BatchNorm2d(features[0]),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(16, 16, kernel_size=3),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(features[0], features[0], kernel_size=3),
+            nn.BatchNorm2d(features[0]),
             nn.LeakyReLU(inplace=True),
         )
-        self.final = nn.Conv2d(16, num_classes, kernel_size=1)
+        self.final = nn.Conv2d(features[0], num_classes, kernel_size=1)
         initialize_weights(self)
 
     def forward(self, x):

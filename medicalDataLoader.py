@@ -17,23 +17,42 @@ import pdb
 warnings.filterwarnings("ignore")
 
 
-def make_dataset(root, mode):
+def make_dataset(root, mode,supervision):
     assert mode in ['train','val', 'test']
     items = []
-
     if mode == 'train':
-        train_img_path = os.path.join(root, 'train', 'Img')
-        train_mask_path = os.path.join(root, 'train', 'GT')
+        if supervision == "full":
+            train_img_path = os.path.join(root, 'train', 'Img')
+            train_mask_path = os.path.join(root, 'train', 'GT')
 
-        images = os.listdir(train_img_path)
-        labels = os.listdir(train_mask_path)
+            images = os.listdir(train_img_path)
+            labels = os.listdir(train_mask_path)
 
-        images.sort()
-        labels.sort()
+            images.sort()
+            labels.sort()
 
-        for it_im, it_gt in zip(images, labels):
-            item = (os.path.join(train_img_path, it_im), os.path.join(train_mask_path, it_gt))
-            items.append(item)
+            for it_im, it_gt in zip(images, labels):
+                item = (os.path.join(train_img_path, it_im), os.path.join(train_mask_path, it_gt))
+                items.append(item)
+        elif supervision == 'semi':
+            train_img_path = os.path.join(root, 'train', 'Img')
+            train_mask_path = os.path.join(root, 'train', 'GT')
+            unlabeled_img_path = os.path.join(root, 'train', 'Img-Unlabeled')
+
+            images = os.listdir(train_img_path)
+            unlabeled_images = os.listdir(unlabeled_img_path)
+            images.extend(unlabeled_images)
+            labels = os.listdir(train_mask_path)
+
+            # images.sort()
+            # labels.sort()
+            labels.extend([None]*len(unlabeled_images))
+            for it_im, it_gt in zip(images, labels):
+                if it_gt:
+                    item = (os.path.join(train_img_path, it_im), os.path.join(train_mask_path, it_gt))
+                else:
+                    item = (os.path.join(unlabeled_img_path, it_im), None)
+                items.append(item)
 
 
     elif mode == 'val':
@@ -68,7 +87,7 @@ def make_dataset(root, mode):
 
 class MedicalImageDataset(Dataset):
 
-    def __init__(self, mode, root_dir, transform=None, mask_transform=None, augment=False, equalize=False):
+    def __init__(self, mode, supervision, root_dir, transform=None, mask_transform=None, augment=False, equalize=False):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -78,10 +97,11 @@ class MedicalImageDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         self.mask_transform = mask_transform
-        self.imgs = make_dataset(root_dir, mode)
+        self.imgs = make_dataset(root_dir, mode,supervision)
         self.augmentation = augment
         self.equalize = equalize
         self.mode = mode
+        self.supervision = supervision
 
     def __len__(self):
         return len(self.imgs)
@@ -102,7 +122,10 @@ class MedicalImageDataset(Dataset):
     def __getitem__(self, index):
         img_path, mask_path = self.imgs[index]
         img = Image.open(img_path)
-        mask = Image.open(mask_path).convert('L')
+        try:
+            mask = Image.open(mask_path).convert('L')
+        except:
+            mask = np.zeros(np.array(img).shape)
 
         if self.equalize:
             img = ImageOps.equalize(img)
@@ -113,5 +136,5 @@ class MedicalImageDataset(Dataset):
         if self.transform:
             img = self.transform(img)
             mask = self.mask_transform(mask)
-
+      
         return [img, mask, img_path]

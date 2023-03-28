@@ -89,36 +89,36 @@ class AttU_Net(nn.Module):
     Attention Unet implementation
     Paper: https://arxiv.org/abs/1804.03999
     """
-    def __init__(self, num_classes):
+    def __init__(self, num_classes,n1):
         super(AttU_Net, self).__init__()
-
-        self.Conv1 = conv_block(1, 16)
+        features = [n1, n1*2, n1*4, n1*8, n1*16]
+        self.Conv1 = conv_block(1, features[0])
         self.Maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.Conv2 = conv_block(16, 32)
+        self.Conv2 = conv_block(features[0], features[1])
         self.Maxpool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.Conv3 = conv_block(32, 64)
+        self.Conv3 = conv_block(features[1], features[2])
         self.Maxpool3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.Conv4 = conv_block(64, 128)
+        self.Conv4 = conv_block(features[2], features[3])
         self.Maxpool4 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.Conv5 = conv_block(128, 256,True)
+        self.Conv5 = conv_block(features[3], features[4],True)
 
-        self.Up5 = up_conv(256, 128)
-        self.Att5 = Attention_block(F_g=128, F_l=128, F_int=64)
-        self.Up_conv5 = conv_block(256, 128)
+        self.Up5 = up_conv(features[4], features[3])
+        self.Att5 = Attention_block(F_g=features[3], F_l=features[3], F_int=features[2])
+        self.Up_conv5 = conv_block(features[4], features[3])
 
-        self.Up4 = up_conv(128, 64)
-        self.Att4 = Attention_block(F_g=64, F_l=64, F_int=32)
-        self.Up_conv4 = conv_block(128, 64)
+        self.Up4 = up_conv(features[3], features[2])
+        self.Att4 = Attention_block(F_g=features[2], F_l=features[2], F_int=features[1])
+        self.Up_conv4 = conv_block(features[3], features[2])
 
-        self.Up3 = up_conv(64, 32)
-        self.Att3 = Attention_block(F_g=32, F_l=32, F_int=16)
-        self.Up_conv3 = conv_block(64, 32)
+        self.Up3 = up_conv(features[2], features[1])
+        self.Att3 = Attention_block(F_g=features[1], F_l=features[1], F_int=features[0])
+        self.Up_conv3 = conv_block(features[2], features[1])
 
-        self.Up2 = up_conv(32, 16)
-        self.Att2 = Attention_block(F_g=16, F_l=16, F_int=32)
-        self.Up_conv2 = conv_block(32, 16)
+        self.Up2 = up_conv(features[1], features[0])
+        self.Att2 = Attention_block(F_g=features[0], F_l=features[0], F_int=features[0]//2)
+        self.Up_conv2 = conv_block(features[1], features[0])
 
-        self.final = nn.Conv2d(16, num_classes, kernel_size=1, stride=1, padding=0)
+        self.final = nn.Conv2d(features[0], num_classes, kernel_size=1, stride=1, padding=0)
         initialize_weights(self)
 
 
